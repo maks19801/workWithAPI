@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import {UsersService} from "../services/users.service";
 import {UserModel} from "../models/UserModel";
 import {Router} from "@angular/router";
@@ -6,22 +6,27 @@ import {Router} from "@angular/router";
 @Component({
   selector: 'app-users',
   templateUrl: './users.component.html',
-  styleUrls: ['./users.component.css']
+  styleUrls: ['./users.component.css'],
 })
 export class UsersComponent implements OnInit {
-
-  users: UserModel[];
+  @Input() users: UserModel[];
 
   page: number = 1;
-
-  maxPages!: number;
-
-  constructor(private readonly usersService: UsersService, private readonly router: Router) { }
+  @Input() pageSize: number = 20;
+  maxPages: number;
+  @Output() pageChange = new EventEmitter<number>();
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadUsers();
   }
 
+  onPaginationChange(page) {
+    this.pageChange.emit(page);
+  }
   canGoPrevious(): boolean {
     return !(this.page <= 1);
   }
@@ -31,35 +36,33 @@ export class UsersComponent implements OnInit {
   }
 
   previousPageClick() {
-    if(this.canGoPrevious()) {
+    if (this.canGoPrevious()) {
       this.page -= 1;
       this.loadUsers();
     }
   }
 
   nextPageClick() {
-    if(this.canGoNext()) {
+    if (this.canGoNext()) {
       this.page += 1;
       this.loadUsers();
     }
   }
 
-  userDetails(id: number){
+  userDetails(id: number) {
     this.router.navigateByUrl(`/user/${id}`);
   }
 
   loadUsers() {
-    this.usersService.getUsers(this.page)
-      .subscribe((res: any) => {
-        this.maxPages = res.meta.pagination.pages;
-        this.users = res.data;
-      })
+    this.usersService.getUsers(this.page).subscribe((res: any) => {
+      this.maxPages = res.meta.pagination.pages;
+      this.users = res.data;
+    });
   }
 
   addUser(newUser: UserModel) {
     this.usersService.addUser(newUser).subscribe(() => {
       this.users = [newUser, ...this.users];
-    })
+    });
   }
-
 }
